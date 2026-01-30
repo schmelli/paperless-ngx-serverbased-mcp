@@ -267,6 +267,17 @@ Note: tag_ids replaces ALL existing tags. To add a tag, include all existing tag
     },
     async (params: UpdateDocumentInput) => {
       try {
+        // Validate that at least one field to update is specified
+        const { document_id, ...updateFields } = params;
+        if (Object.values(updateFields).every(v => v === undefined)) {
+          return {
+            content: [{
+              type: "text",
+              text: "Error: At least one field to update must be specified (title, correspondent_id, document_type_id, tag_ids, archive_serial_number, or created)."
+            }]
+          };
+        }
+        
         // Build update payload with only provided fields
         const updateData: Record<string, unknown> = {};
         
