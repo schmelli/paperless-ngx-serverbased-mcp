@@ -181,10 +181,7 @@ export const UpdateDocumentSchema = z.object({
   created: DateSchema
     .optional()
     .describe("New creation date (YYYY-MM-DD format)")
-}).strict().refine(
-  data => Object.keys(data).length > 1, // At least document_id + one other field
-  { message: "At least one field to update must be specified" }
-);
+}).strict();
 
 export type UpdateDocumentInput = z.infer<typeof UpdateDocumentSchema>;
 
