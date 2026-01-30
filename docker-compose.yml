@@ -1,0 +1,89 @@
+# =============================================================================
+# Paperless NGX MCP Server - Docker Compose Configuration
+# =============================================================================
+# This file defines the complete deployment setup for the MCP server.
+#
+# Usage:
+#   1. Copy .env.example to .env and fill in your values
+#   2. Run: docker-compose up -d
+#   3. Check logs: docker-compose logs -f
+#   4. Stop: docker-compose down
+#
+# The server will be available at http://your-server:3000/mcp
+# =============================================================================
+
+services:
+  paperless-ngx-mcp:
+    # Build from local Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Or use a pre-built image from a registry:
+    # image: your-registry/paperless-ngx-mcp-server:latest
+    
+    container_name: paperless-ngx-mcp-server
+    
+    # Restart policy for production reliability
+    # "unless-stopped" means the container restarts automatically unless
+    # explicitly stopped by the user
+    restart: unless-stopped
+    
+    # Port mapping: host_port:container_port
+    # Change the host port (left side) if 3000 is already in use
+    ports:
+      - "${MCP_PORT:-3000}:3000"
+    
+    # Environment variables for configuration
+    # You can either set these directly here or use a .env file
+    environment:
+      # Required: Your Paperless NGX server URL (without trailing slash)
+      - PAPERLESS_URL=${PAPERLESS_URL}
+      
+      # Required: API token from Paperless NGX (Settings → API Tokens)
+      - PAPERLESS_TOKEN=${PAPERLESS_TOKEN}
+      
+      # Transport mode (http for remote access, stdio for local)
+      - TRANSPORT=http
+      
+      # Server binding configuration
+      - PORT=3000
+      - HOST=0.0.0.0
+    
+    # Resource limits to prevent runaway containers
+    # Adjust these based on your server's capabilities
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    # Health check configuration
+    # Docker will monitor the container's health and restart if unhealthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Logging configuration
+    # Limits log file size to prevent disk space issues
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network configuration
+    # Using bridge network mode - the container can reach external services
+    networks:
+      - mcp-network
+
+# Network definition
+networks:
+  mcp-network:
+    driver: bridge
