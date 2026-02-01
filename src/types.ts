@@ -174,6 +174,16 @@ export interface UploadTaskResponse {
   task_id: string;
 }
 
+/**
+ * Custom field definition in Paperless NGX.
+ */
+export interface PaperlessCustomField {
+  id: number;
+  name: string;
+  data_type: string;  // "string", "integer", "boolean", "date", "url", "float", "monetary", "documentlink"
+  extra_data?: Record<string, unknown>;
+}
+
 // =============================================================================
 // Internal Types - used within the MCP server
 // =============================================================================
