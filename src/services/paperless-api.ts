@@ -182,6 +182,9 @@ export async function apiRequest<T>(
     fetchOptions.body = options.formData;
   } else if (options.body !== undefined) {
     fetchOptions.body = JSON.stringify(options.body);
+    // Debug: Log the actual body being sent
+    console.error(`[API DEBUG] ${method} ${endpoint}`);
+    console.error(`[API DEBUG] Body: ${fetchOptions.body}`);
   }
   
   try {
