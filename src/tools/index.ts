@@ -309,9 +309,12 @@ Note: Use paperless_list_custom_fields to find available custom field IDs and th
           updateData.custom_fields = params.custom_fields;
         }
         
-        // Debug: Log what we're sending
-        console.error("Update payload:", JSON.stringify(updateData, null, 2));
-        console.error("Params received:", JSON.stringify(params, null, 2));
+        // Debug: Log what we received and what we're sending
+        console.error("[TOOL DEBUG] Raw params:", JSON.stringify(params));
+        console.error("[TOOL DEBUG] custom_fields in params:", params.custom_fields);
+        console.error("[TOOL DEBUG] custom_fields type:", typeof params.custom_fields);
+        console.error("[TOOL DEBUG] custom_fields is array:", Array.isArray(params.custom_fields));
+        console.error("[TOOL DEBUG] Update payload:", JSON.stringify(updateData));
         
         const data = await patch<PaperlessDocument>(
           `/api/documents/${params.document_id}/`,
