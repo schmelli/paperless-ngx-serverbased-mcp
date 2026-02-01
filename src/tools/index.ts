@@ -305,9 +305,13 @@ Note: Use paperless_list_custom_fields to find available custom field IDs and th
         if (params.created !== undefined) {
           updateData.created = params.created;
         }
-        if (params.custom_fields !== undefined) {
+        if (params.custom_fields !== undefined && params.custom_fields.length > 0) {
           updateData.custom_fields = params.custom_fields;
         }
+        
+        // Debug: Log what we're sending
+        console.error("Update payload:", JSON.stringify(updateData, null, 2));
+        console.error("Params received:", JSON.stringify(params, null, 2));
         
         const data = await patch<PaperlessDocument>(
           `/api/documents/${params.document_id}/`,
