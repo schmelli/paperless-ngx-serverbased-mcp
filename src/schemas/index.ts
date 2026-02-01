@@ -141,8 +141,26 @@ export const GetDocumentSchema = z.object({
 export type GetDocumentInput = z.infer<typeof GetDocumentSchema>;
 
 /**
+ * Schema for a custom field value.
+ */
+export const CustomFieldValueSchema = z.object({
+  field: z.number()
+    .int()
+    .positive()
+    .describe("The ID of the custom field"),
+  value: z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null()
+  ]).describe("The value for the custom field (type depends on field definition)")
+});
+
+/**
  * Schema for updating document metadata.
  * All fields are optional - only specified fields will be updated.
+ * Note: We don't use .refine() here as it breaks JSON schema export to MCP clients.
+ * The validation for "at least one field" is done in the tool handler instead.
  */
 export const UpdateDocumentSchema = z.object({
   document_id: z.number()
@@ -180,7 +198,11 @@ export const UpdateDocumentSchema = z.object({
   
   created: DateSchema
     .optional()
-    .describe("New creation date (YYYY-MM-DD format)")
+    .describe("New creation date (YYYY-MM-DD format)"),
+  
+  custom_fields: z.array(CustomFieldValueSchema)
+    .optional()
+    .describe("Custom field values. Each entry needs 'field' (ID) and 'value'. Use paperless_list_custom_fields to find field IDs.")
 }).strict();
 
 export type UpdateDocumentInput = z.infer<typeof UpdateDocumentSchema>;
@@ -396,3 +418,16 @@ export const GetStatisticsSchema = z.object({
 }).strict();
 
 export type GetStatisticsInput = z.infer<typeof GetStatisticsSchema>;
+
+// =============================================================================
+// Custom Fields Schema
+// =============================================================================
+
+/**
+ * Schema for listing custom fields.
+ */
+export const ListCustomFieldsSchema = z.object({
+  response_format: ResponseFormatSchema
+}).strict();
+
+export type ListCustomFieldsInput = z.infer<typeof ListCustomFieldsSchema>;
