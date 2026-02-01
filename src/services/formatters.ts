@@ -19,6 +19,7 @@ import type {
   PaperlessDocumentType,
   PaperlessSavedView,
   PaperlessStatistics,
+  PaperlessCustomField,
   DocumentSuggestions,
   PaginatedResponse,
   ResponseFormat
@@ -434,6 +435,50 @@ export function formatStatisticsMarkdown(stats: PaperlessStatistics): string {
       const displayType = ft.mime_type.replace("application/", "").replace("image/", "");
       lines.push(`  - ${displayType}: ${ft.mime_type_count.toLocaleString("de-DE")}`);
     }
+  }
+  
+  return lines.join("\n");
+}
+
+// =============================================================================
+// Custom Fields Formatting
+// =============================================================================
+
+/**
+ * Map custom field data types to human-readable descriptions.
+ */
+const CUSTOM_FIELD_TYPE_NAMES: Record<string, string> = {
+  "string": "Text",
+  "integer": "Integer",
+  "boolean": "Boolean (true/false)",
+  "date": "Date (YYYY-MM-DD)",
+  "url": "URL",
+  "float": "Decimal number",
+  "monetary": "Monetary value",
+  "documentlink": "Document link"
+};
+
+/**
+ * Format a list of custom fields as markdown.
+ */
+export function formatCustomFieldsListMarkdown(
+  fields: PaperlessCustomField[]
+): string {
+  if (fields.length === 0) {
+    return "No custom fields defined in Paperless NGX.";
+  }
+  
+  const lines: string[] = [
+    `## Custom Fields (${fields.length} total)`,
+    "",
+    "Use these field IDs when setting custom_fields on documents.",
+    ""
+  ];
+  
+  for (const field of fields) {
+    const typeName = CUSTOM_FIELD_TYPE_NAMES[field.data_type] || field.data_type;
+    lines.push(`- **${field.name}** (ID: ${field.id})`);
+    lines.push(`  - Type: ${typeName}`);
   }
   
   return lines.join("\n");
