@@ -26,6 +26,7 @@ import {
   formatSavedViewsListMarkdown,
   formatStatisticsMarkdown,
   formatSuggestionsMarkdown,
+  formatCustomFieldsListMarkdown,
   formatResponse
 } from "../services/formatters.js";
 import {
@@ -44,6 +45,7 @@ import {
   ListSavedViewsSchema,
   ExecuteSavedViewSchema,
   GetStatisticsSchema,
+  ListCustomFieldsSchema,
   type SearchDocumentsInput,
   type GetDocumentInput,
   type UpdateDocumentInput,
@@ -58,7 +60,8 @@ import {
   type CreateDocumentTypeInput,
   type ListSavedViewsInput,
   type ExecuteSavedViewInput,
-  type GetStatisticsInput
+  type GetStatisticsInput,
+  type ListCustomFieldsInput
 } from "../schemas/index.js";
 import type {
   PaginatedResponse,
@@ -68,6 +71,7 @@ import type {
   PaperlessDocumentType,
   PaperlessSavedView,
   PaperlessStatistics,
+  PaperlessCustomField,
   DocumentSuggestions
 } from "../types.js";
 import { PAPERLESS_URL } from "../constants.js";
@@ -242,7 +246,7 @@ Returns:
       title: "Update Document Metadata",
       description: `Update metadata of an existing document in Paperless NGX.
 
-Allows changing title, correspondent, document type, tags, ASN, and creation date. Only the specified fields will be updated; others remain unchanged.
+Allows changing title, correspondent, document type, tags, ASN, creation date, and custom fields. Only the specified fields will be updated; others remain unchanged.
 
 Args:
   - document_id (number, required): ID of the document to update
@@ -252,11 +256,13 @@ Args:
   - tag_ids (number[], optional): New tag IDs (REPLACES all existing tags)
   - archive_serial_number (number, optional): New ASN (0 to remove)
   - created (string, optional): New creation date (YYYY-MM-DD)
+  - custom_fields (array, optional): Custom field values as [{field: ID, value: VALUE}, ...]
 
 Returns:
   Confirmation with the updated document details.
 
-Note: tag_ids replaces ALL existing tags. To add a tag, include all existing tag IDs plus the new one.`,
+Note: tag_ids replaces ALL existing tags. To add a tag, include all existing tag IDs plus the new one.
+Note: Use paperless_list_custom_fields to find available custom field IDs and their types.`,
       inputSchema: UpdateDocumentSchema,
       annotations: {
         readOnlyHint: false,
@@ -298,6 +304,9 @@ Note: tag_ids replaces ALL existing tags. To add a tag, include all existing tag
         }
         if (params.created !== undefined) {
           updateData.created = params.created;
+        }
+        if (params.custom_fields !== undefined) {
+          updateData.custom_fields = params.custom_fields;
         }
         
         const data = await patch<PaperlessDocument>(
@@ -939,6 +948,56 @@ Returns:
           formatStatisticsMarkdown
         );
         
+        return { content: [{ type: "text", text }] };
+        
+      } catch (error) {
+        return handleToolError(error);
+      }
+    }
+  );
+  
+  // ===========================================================================
+  // Custom Fields Tool
+  // ===========================================================================
+  
+  server.registerTool(
+    "paperless_list_custom_fields",
+    {
+      title: "List Custom Fields",
+      description: `List all custom fields defined in Paperless NGX.
+
+Custom fields allow storing additional metadata on documents. Use this tool to find field IDs when updating documents with custom field values.
+
+Args:
+  - response_format ('markdown' | 'json'): Output format
+
+Returns:
+  List of custom fields with their IDs, names, and data types.
+  
+Data types include: string, integer, boolean, date (YYYY-MM-DD), url, float, monetary, documentlink.`,
+      inputSchema: ListCustomFieldsSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
+      }
+    },
+    async (params: ListCustomFieldsInput) => {
+      try {
+        const response = await get<PaginatedResponse<PaperlessCustomField> | PaperlessCustomField[]>(
+          "/api/custom_fields/"
+        );
+        
+        const fields = Array.isArray(response) ? response : response.results;
+        
+        if (params.response_format === "json") {
+          return {
+            content: [{ type: "text", text: JSON.stringify(fields, null, 2) }]
+          };
+        }
+        
+        const text = formatCustomFieldsListMarkdown(fields);
         return { content: [{ type: "text", text }] };
         
       } catch (error) {
