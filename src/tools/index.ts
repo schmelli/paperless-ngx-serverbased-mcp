@@ -256,13 +256,13 @@ Args:
   - tag_ids (number[], optional): New tag IDs (REPLACES all existing tags)
   - archive_serial_number (number, optional): New ASN (0 to remove)
   - created (string, optional): New creation date (YYYY-MM-DD)
-  - custom_fields (array, optional): Custom field values as [{field: ID, value: VALUE}, ...]
+  - custom_fields (string, optional): JSON string of custom field values, e.g. '[{"field": 4, "value": "12345"}, {"field": 5, "value": 81}]'
 
 Returns:
   Confirmation with the updated document details.
 
 Note: tag_ids replaces ALL existing tags. To add a tag, include all existing tag IDs plus the new one.
-Note: Use paperless_list_custom_fields to find available custom field IDs and their types.`,
+Note: custom_fields must be a JSON string. Use paperless_list_custom_fields to find available field IDs and their types.`,
       inputSchema: UpdateDocumentSchema,
       annotations: {
         readOnlyHint: false,
@@ -306,14 +306,37 @@ Note: Use paperless_list_custom_fields to find available custom field IDs and th
           updateData.created = params.created;
         }
         if (params.custom_fields !== undefined && params.custom_fields.length > 0) {
-          updateData.custom_fields = params.custom_fields;
+          // Parse custom_fields from JSON string
+          try {
+            const parsedCustomFields = JSON.parse(params.custom_fields);
+            if (Array.isArray(parsedCustomFields) && parsedCustomFields.length > 0) {
+              // Validate structure
+              for (const cf of parsedCustomFields) {
+                if (typeof cf.field !== 'number' || cf.value === undefined) {
+                  return {
+                    content: [{
+                      type: "text",
+                      text: `Error: Invalid custom_fields format. Each entry must have 'field' (number) and 'value'. Got: ${JSON.stringify(cf)}`
+                    }]
+                  };
+                }
+              }
+              updateData.custom_fields = parsedCustomFields;
+            }
+          } catch (parseError) {
+            return {
+              content: [{
+                type: "text",
+                text: `Error: custom_fields must be a valid JSON string. Example: '[{"field": 4, "value": "12345"}]'. Parse error: ${parseError}`
+              }]
+            };
+          }
         }
         
         // Debug: Log what we received and what we're sending
         console.error("[TOOL DEBUG] Raw params:", JSON.stringify(params));
         console.error("[TOOL DEBUG] custom_fields in params:", params.custom_fields);
         console.error("[TOOL DEBUG] custom_fields type:", typeof params.custom_fields);
-        console.error("[TOOL DEBUG] custom_fields is array:", Array.isArray(params.custom_fields));
         console.error("[TOOL DEBUG] Update payload:", JSON.stringify(updateData));
         
         const data = await patch<PaperlessDocument>(
