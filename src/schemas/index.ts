@@ -161,6 +161,7 @@ export const CustomFieldValueSchema = z.object({
  * All fields are optional - only specified fields will be updated.
  * Note: We don't use .refine() here as it breaks JSON schema export to MCP clients.
  * The validation for "at least one field" is done in the tool handler instead.
+ * Note: custom_fields accepts a JSON string due to MCP SDK limitations with nested objects.
  */
 export const UpdateDocumentSchema = z.object({
   document_id: z.number()
@@ -200,9 +201,9 @@ export const UpdateDocumentSchema = z.object({
     .optional()
     .describe("New creation date (YYYY-MM-DD format)"),
   
-  custom_fields: z.array(CustomFieldValueSchema)
+  custom_fields: z.string()
     .optional()
-    .describe("Custom field values. Each entry needs 'field' (ID) and 'value'. Use paperless_list_custom_fields to find field IDs.")
+    .describe("Custom field values as JSON string, e.g. '[{\"field\": 4, \"value\": \"12345\"}, {\"field\": 5, \"value\": 81}]'. Use paperless_list_custom_fields to find field IDs.")
 }).strict();
 
 export type UpdateDocumentInput = z.infer<typeof UpdateDocumentSchema>;
